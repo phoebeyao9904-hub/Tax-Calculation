@@ -1,0 +1,731 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联邦与多州税务估算器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            /* 细微的网格背景增加科技金融感 */
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        
+        /* 卡片基础样式 */
+        .section-card {
+            @apply bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200/60 mb-6 transition-all duration-300 hover:shadow-md;
+        }
+
+        /* 标题样式 */
+        .section-title {
+            @apply text-xl font-bold mb-6 text-slate-800 flex items-center gap-3;
+        }
+        
+        /* 现代输入框组 */
+        .form-group {
+            @apply relative mb-4;
+        }
+        .form-label {
+            @apply block text-sm font-semibold text-slate-700 mb-2;
+        }
+        .input-icon-prefix {
+            @apply absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium select-none;
+        }
+        .form-input {
+            @apply w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 pl-8 text-slate-800 outline-none transition-all duration-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 hover:border-slate-300;
+        }
+
+        /* Form 1120 专属精美台账样式 */
+        .ledger-row {
+            @apply flex justify-between items-center py-2.5 border-b border-slate-100 last:border-0 transition-colors hover:bg-slate-50/50 rounded-lg px-2 -mx-2;
+        }
+        .ledger-label {
+            @apply text-sm text-slate-600 font-medium flex-1 pr-4;
+        }
+        .ledger-input-group {
+            @apply relative w-36;
+        }
+        .ledger-input {
+            @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pl-7 text-sm text-right text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+        }
+
+        /* 状态条目动画与样式 */
+        .state-entry {
+            @apply bg-white border border-slate-200 shadow-sm rounded-2xl p-5 relative transition-all hover:border-blue-300 hover:shadow-md;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 按钮渐变特效 */
+        .btn-primary {
+            @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 font-semibold;
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-4 py-8 md:py-12">
+        <header class="mb-10 text-center md:text-left md:flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                        联邦与多州税务估算器
+                    </span>
+                </h1>
+                <p class="text-slate-500 max-w-2xl text-sm md:text-base leading-relaxed">
+                    专为具有跨州业务 (Nexus) 的企业设计。基于 IRS Form 1120 核心逻辑及各州最新单因素分摊法构建。
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    2024-2025 税法适用
+                </span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-8 space-y-8">
+                
+                <!-- 1. 收入与毛利 -->
+                <div class="section-card">
+                    <h2 class="section-title">
+                        <div class="bg-blue-100 text-blue-600 p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        1. 营业收入 (Gross Income)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label" for="grossRevenue">总营业收入 (Gross Receipts - Line 1)</label>
+                            <span class="input-icon-prefix">$</span>
+                            <input type="number" id="grossRevenue" class="form-input" placeholder="输入总收入" value="1500000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="cogs">销货成本 (COGS - Line 2)</label>
+                            <span class="input-icon-prefix">$</span>
+                            <input type="number" id="cogs" class="form-input" placeholder="输入成本" value="600000">
+                        </div>
+                    </div>
+                    <div class="mt-2 bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center">
+                        <span class="text-slate-600 font-semibold text-sm">总利润 (Gross Profit)</span>
+                        <span id="displayGrossProfit" class="text-2xl font-bold text-slate-800 tracking-tight">$0</span>
+                    </div>
+                </div>
+
+                <!-- 2. 联邦抵扣 -->
+                <div class="section-card">
+                    <div class="flex flex-wrap justify-between items-end mb-6 gap-2">
+                        <h2 class="section-title mb-0">
+                            <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"></path></svg></div>
+                            2. 联邦税抵扣项 (Form 1120)
+                        </h2>
+                        <span class="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-full">留空默认为 $0</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 mb-6">
+                        <!-- Left Column -->
+                        <div class="space-y-1">
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 12: 官员薪酬</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line12" class="ledger-input ded-input" value="100000">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 13: 员工薪水</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line13" class="ledger-input ded-input" value="150000">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 14: 维修保养</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line14" class="ledger-input ded-input" value="0">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 15: 坏账损失</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line15" class="ledger-input ded-input" value="0">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 16: 租金支出</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line16" class="ledger-input ded-input" value="50000">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 17: 税费及执照</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line17" class="ledger-input ded-input" value="5000">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-1">
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 18: 利息支出</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line18" class="ledger-input ded-input" value="0">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 19: 慈善捐款</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line19" class="ledger-input ded-input" value="0">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 20: 折旧摊销</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line20" class="ledger-input ded-input" value="20000">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 22: 广告营销</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line22" class="ledger-input ded-input" value="30000">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 24: 养老计划</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line24" class="ledger-input ded-input" value="0">
+                                </div>
+                            </div>
+                            <div class="ledger-row">
+                                <label class="ledger-label">Line 26: 其他费用</label>
+                                <div class="ledger-input-group">
+                                    <span class="absolute left-2.5 top-1.5 text-slate-400 text-sm">$</span>
+                                    <input type="number" id="ded_line26" class="ledger-input ded-input" value="25000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Line 27 Sum -->
+                    <div class="bg-indigo-50/50 border border-indigo-100 p-4 rounded-2xl flex justify-between items-center mb-6">
+                        <span class="text-indigo-800 font-semibold text-sm">Line 27: 总常规抵扣 (Total Deductions)</span>
+                        <span id="displayTotalDeductions" class="text-xl font-bold text-indigo-700">$0</span>
+                    </div>
+                    
+                    <!-- Line 29 Special Deductions -->
+                    <div class="relative pt-6">
+                        <div class="absolute inset-0 flex items-center pointer-events-none" aria-hidden="true">
+                            <div class="w-full border-t border-slate-200 border-dashed"></div>
+                        </div>
+                        <div class="relative flex justify-center mb-4">
+                            <span class="px-3 bg-white text-sm font-semibold text-slate-500">特殊抵扣项 (Line 29)</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100 relative z-10">
+                             <div class="form-group mb-0">
+                                <label class="form-label text-xs">Line 29a: 净营业亏损结转 (NOL)</label>
+                                <span class="input-icon-prefix">$</span>
+                                <input type="number" id="ded_line29a" class="form-input !py-2 !rounded-lg spc-ded-input" value="0">
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="form-label text-xs">Line 29b: 其他特殊扣除</label>
+                                <span class="input-icon-prefix">$</span>
+                                <input type="number" id="ded_line29b" class="form-input !py-2 !rounded-lg spc-ded-input" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 各州税负分摊 -->
+                <div class="section-card">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <h2 class="section-title mb-0">
+                            <div class="bg-purple-100 text-purple-600 p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                            3. 各州税负分摊 (State Nexus)
+                        </h2>
+                        <button id="addStateBtn" class="btn-primary px-4 py-2 rounded-xl text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            添加业务州
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-500 mb-6 bg-purple-50 p-3 rounded-lg border border-purple-100">
+                        请添加您的公司触发纳税义务 (Nexus) 的州。输入该州销售额占全美总销售额的百分比 (适用于主流的<strong>单因素销售分摊法 Single Sales Factor</strong>)。
+                    </p>
+                    
+                    <div id="statesContainer" class="space-y-4">
+                        <!-- 动态生成的 State Entries 将放置在这里 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 relative">
+                <div class="bg-slate-900 rounded-3xl shadow-2xl sticky top-8 overflow-hidden border border-slate-700/50">
+                    
+                    <!-- 仪表盘 Header -->
+                    <div class="p-6 md:p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-1">
+                            税负分析报告
+                        </h2>
+                        <div class="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                            <span class="relative flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            数据随输入实时计算中
+                        </div>
+                    </div>
+
+                    <!-- 联邦数据解析 -->
+                    <div class="p-6 md:p-8">
+                        <div class="mb-6">
+                            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <div class="w-1 h-3 bg-blue-500 rounded-full"></div>
+                                联邦税基推算
+                            </h3>
+                            
+                            <div class="space-y-3 font-mono text-sm">
+                                <div class="flex justify-between items-center text-slate-300">
+                                    <span class="font-sans">Line 28 (扣除前收入)</span>
+                                    <span id="resLine28" class="font-medium">$0</span>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-300">
+                                    <span class="font-sans text-rose-400">Line 29 (NOL & 特殊)</span>
+                                    <span id="resLine29c" class="font-medium text-rose-400">-$0</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-slate-700/50">
+                                    <span class="font-sans font-semibold text-white">Line 30 应纳税所得额</span>
+                                    <span id="resLine30" class="text-base text-white font-bold">$0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 联邦所得税展示 -->
+                        <div class="mb-6 bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 text-blue-400">
+                                <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                            </div>
+                            <h3 class="text-blue-300 text-xs font-bold uppercase tracking-wider mb-2 relative z-10">联邦所得税 (21% Flat Rate)</h3>
+                            <p class="text-3xl font-mono text-white font-bold relative z-10" id="resFedTax">$0</p>
+                        </div>
+
+                        <!-- 州税展示 -->
+                        <div class="mb-8">
+                            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <div class="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                各州税负明细
+                            </h3>
+                            <div id="resStateTaxesList" class="space-y-2.5 text-sm font-mono bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <!-- 动态注入州税结果 -->
+                                <p class="text-slate-500 italic text-xs font-sans">未添加任何业务州。</p>
+                            </div>
+                            <div class="flex justify-between mt-3 font-semibold text-purple-300 px-1">
+                                <span class="font-sans text-sm">州税总计:</span>
+                                <span id="resTotalStateTax" class="font-mono text-base">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- 终极总预估税额 -->
+                        <div class="pt-6 border-t-2 border-slate-700">
+                            <h3 class="text-slate-200 text-sm font-bold mb-1">总预估纳税额 (Total Estimated Tax)</h3>
+                            <p class="text-slate-500 text-xs mb-3">联邦所得税 + 所有州税总和</p>
+                            <p class="text-[2.5rem] leading-none font-extrabold font-mono text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 drop-shadow-md" id="resTotalTax">
+                                $0
+                            </p>
+                            
+                            <div class="mt-5 flex justify-between items-center bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                               <p class="text-xs text-slate-400 font-medium">综合有效税率 (Effective Tax Rate)</p>
+                               <span class="font-bold text-emerald-400" id="resEffectiveRate">0.00%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部控制栏 -->
+                    <div class="grid grid-cols-2 text-sm font-semibold border-t border-slate-700">
+                        <button id="calculateBtn" class="py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
+                            <span class="flex justify-center items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                强制刷新
+                            </span>
+                        </button>
+                        <button id="clearBtn" class="py-4 bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 transition-colors border-l border-slate-700">
+                            <span class="flex justify-center items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                清空数据
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 基础配置
+            const FED_TAX_RATE = 0.21;
+            
+            // 州税率参考字典 (全美50州+DC)
+            // 无所得税的州设定为0%，方便后续扩展CAT等特殊税
+            const STATE_RATES = {
+                "AL": { name: "阿拉巴马州 (AL)", rate: 6.5 },
+                "AK": { name: "阿拉斯加州 (AK)", rate: 9.4 },
+                "AZ": { name: "亚利桑那州 (AZ)", rate: 4.9 },
+                "AR": { name: "阿肯色州 (AR)", rate: 4.8 },
+                "CA": { name: "加利福尼亚州 (CA)", rate: 8.84 },
+                "CO": { name: "科罗拉多州 (CO)", rate: 4.4 },
+                "CT": { name: "康涅狄格州 (CT)", rate: 7.5 },
+                "DE": { name: "特拉华州 (DE)", rate: 8.7 },
+                "FL": { name: "佛罗里达州 (FL)", rate: 5.5 },
+                "GA": { name: "佐治亚州 (GA)", rate: 5.75 },
+                "HI": { name: "夏威夷州 (HI)", rate: 6.4 },
+                "ID": { name: "爱达荷州 (ID)", rate: 5.8 },
+                "IL": { name: "伊利诺伊州 (IL)", rate: 9.5 },
+                "IN": { name: "印第安纳州 (IN)", rate: 4.9 },
+                "IA": { name: "艾奥瓦州 (IA)", rate: 7.1 },
+                "KS": { name: "堪萨斯州 (KS)", rate: 7.0 },
+                "KY": { name: "肯塔基州 (KY)", rate: 5.0 },
+                "LA": { name: "路易斯安那州 (LA)", rate: 7.5 },
+                "ME": { name: "缅因州 (ME)", rate: 8.93 },
+                "MD": { name: "马里兰州 (MD)", rate: 8.25 },
+                "MA": { name: "马萨诸塞州 (MA)", rate: 8.0 },
+                "MI": { name: "密歇根州 (MI)", rate: 6.0 },
+                "MN": { name: "明尼苏达州 (MN)", rate: 9.8 },
+                "MS": { name: "密西西比州 (MS)", rate: 4.0 },
+                "MO": { name: "密苏里州 (MO)", rate: 4.0 },
+                "MT": { name: "蒙大拿州 (MT)", rate: 6.75 },
+                "NE": { name: "内布拉斯加州 (NE)", rate: 5.58 },
+                "NV": { name: "内华达州 (NV)", rate: 0.0, note: "无州所得税" },
+                "NH": { name: "新罕布什尔州 (NH)", rate: 7.5 },
+                "NJ": { name: "新泽西州 (NJ)", rate: 9.0 },
+                "NM": { name: "新墨西哥州 (NM)", rate: 5.9 },
+                "NY": { name: "纽约州 (NY)", rate: 7.25 },
+                "NC": { name: "北卡罗来纳州 (NC)", rate: 2.5 },
+                "ND": { name: "北达科他州 (ND)", rate: 4.31 },
+                "OH": { name: "俄亥俄州 (OH)", rate: 0.0, note: "有CAT税" },
+                "OK": { name: "俄克拉何马州 (OK)", rate: 4.0 },
+                "OR": { name: "俄勒冈州 (OR)", rate: 7.6 },
+                "PA": { name: "宾夕法尼亚州 (PA)", rate: 8.99 },
+                "RI": { name: "罗得岛州 (RI)", rate: 7.0 },
+                "SC": { name: "南卡罗来纳州 (SC)", rate: 5.0 },
+                "SD": { name: "南达科他州 (SD)", rate: 0.0, note: "无州所得税" },
+                "TN": { name: "田纳西州 (TN)", rate: 6.5 },
+                "TX": { name: "得克萨斯州 (TX)", rate: 0.0, note: "特许经营税另算" },
+                "UT": { name: "犹他州 (UT)", rate: 4.85 },
+                "VT": { name: "佛蒙特州 (VT)", rate: 8.5 },
+                "VA": { name: "弗吉尼亚州 (VA)", rate: 6.0 },
+                "WA": { name: "华盛顿州 (WA)", rate: 0.0, note: "B&O税另算" },
+                "WV": { name: "西弗吉尼亚州 (WV)", rate: 6.5 },
+                "WI": { name: "威斯康星州 (WI)", rate: 7.9 },
+                "WY": { name: "怀俄明州 (WY)", rate: 0.0, note: "无州所得税" },
+                "DC": { name: "华盛顿特区 (DC)", rate: 8.25 }
+            };
+
+            // DOM Elements
+            const inputs = {
+                gross: document.getElementById('grossRevenue'),
+                cogs: document.getElementById('cogs'),
+            };
+
+            const deductionInputIds = [
+                'ded_line12', 'ded_line13', 'ded_line14', 'ded_line15', 
+                'ded_line16', 'ded_line17', 'ded_line18', 'ded_line19', 
+                'ded_line20', 'ded_line22', 'ded_line24', 'ded_line26'
+            ];
+            const specialDeductionInputIds = ['ded_line29a', 'ded_line29b'];
+            
+            const results = {
+                grossProfit: document.getElementById('displayGrossProfit'),
+                totalDeductions: document.getElementById('displayTotalDeductions'),
+                line28: document.getElementById('resLine28'),
+                line29c: document.getElementById('resLine29c'),
+                line30: document.getElementById('resLine30'),
+                fedTax: document.getElementById('resFedTax'),
+                stateTaxesList: document.getElementById('resStateTaxesList'),
+                totalStateTax: document.getElementById('resTotalStateTax'),
+                totalTax: document.getElementById('resTotalTax'),
+                effectiveRate: document.getElementById('resEffectiveRate')
+            };
+
+            const statesContainer = document.getElementById('statesContainer');
+
+            // Formatters
+            const formatMoney = (amount) => {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount || 0);
+            };
+            const formatPercent = (decimal) => {
+                return (decimal * 100).toFixed(2) + '%';
+            };
+            const getSum = (idsArray) => {
+                return idsArray.reduce((sum, id) => {
+                    const el = document.getElementById(id);
+                    return sum + (parseFloat(el.value) || 0);
+                }, 0);
+            };
+
+            const addStateEntry = (data = null) => {
+                const entryId = 'state_' + Date.now();
+                const div = document.createElement('div');
+                div.className = 'state-entry';
+                
+                let stateOptions = '';
+                Object.keys(STATE_RATES).forEach(code => {
+                    const selected = data && data.code === code ? 'selected' : '';
+                    stateOptions += `<option value="${code}" ${selected}>${STATE_RATES[code].name}</option>`;
+                });
+
+                div.innerHTML = `
+                    <button type="button" class="remove-state-btn absolute top-3 right-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="移除此州">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pr-8">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">选择州</label>
+                            <select class="state-code w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-300 transition-colors">
+                                ${stateOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">州税率 (%)</label>
+                            <div class="relative">
+                                <input type="number" step="0.01" class="state-rate w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 pr-8 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors" value="${data ? data.rate : '8.84'}">
+                                <span class="absolute right-3 top-2.5 text-slate-400 text-sm">%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">销售额占比</label>
+                            <div class="relative">
+                                <input type="number" step="0.1" class="state-ratio w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 pr-8 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors" placeholder="e.g. 40" value="${data ? data.ratio : '100'}">
+                                <span class="absolute right-3 top-2.5 text-slate-400 text-sm">%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                statesContainer.appendChild(div);
+
+                const select = div.querySelector('.state-code');
+                const rateInput = div.querySelector('.state-rate');
+                const ratioInput = div.querySelector('.state-ratio');
+                const removeBtn = div.querySelector('.remove-state-btn');
+
+                select.addEventListener('change', (e) => {
+                    const code = e.target.value;
+                    if(STATE_RATES[code]) rateInput.value = STATE_RATES[code].rate;
+                    calculateTax();
+                    saveData();
+                });
+
+                [rateInput, ratioInput].forEach(inp => {
+                    inp.addEventListener('input', () => { calculateTax(); saveData(); });
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    div.style.opacity = '0';
+                    div.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        div.remove();
+                        calculateTax();
+                        saveData();
+                    }, 200);
+                });
+            };
+
+            document.getElementById('addStateBtn').addEventListener('click', () => {
+                addStateEntry();
+                calculateTax();
+                saveData();
+            });
+
+            const calculateTax = () => {
+                // 1. Gross Profit
+                const gross = parseFloat(inputs.gross.value) || 0;
+                const cogs = parseFloat(inputs.cogs.value) || 0;
+                const grossProfit = gross - cogs;
+                results.grossProfit.textContent = formatMoney(grossProfit);
+
+                // 2. Total Deductions
+                const totalDeds = getSum(deductionInputIds);
+                results.totalDeductions.textContent = formatMoney(totalDeds);
+
+                // 3. Line 28
+                const line28 = grossProfit - totalDeds;
+                results.line28.textContent = formatMoney(line28);
+                results.line28.className = line28 < 0 ? 'font-medium text-rose-400' : 'font-medium text-white';
+
+                // 4. Line 29c
+                const line29c = getSum(specialDeductionInputIds);
+                results.line29c.textContent = `-${formatMoney(line29c)}`;
+
+                // 5. Line 30 (Federal Tax Base)
+                const line30 = Math.max(0, line28 - line29c);
+                results.line30.textContent = formatMoney(line30);
+
+                // 6. Federal Tax
+                const fedTax = line30 * FED_TAX_RATE;
+                results.fedTax.textContent = formatMoney(fedTax);
+
+                // 7. State Tax
+                results.stateTaxesList.innerHTML = '';
+                let totalStateTax = 0;
+                let totalRatio = 0;
+                const stateTaxBase = Math.max(0, line28); 
+                
+                const stateNodes = document.querySelectorAll('.state-entry');
+                if (stateNodes.length === 0) {
+                    results.stateTaxesList.innerHTML = '<p class="text-slate-500 italic text-xs font-sans">未添加任何业务州。</p>';
+                } else {
+                    stateNodes.forEach(node => {
+                        const code = node.querySelector('.state-code').value;
+                        const rate = (parseFloat(node.querySelector('.state-rate').value) || 0) / 100;
+                        const ratio = (parseFloat(node.querySelector('.state-ratio').value) || 0) / 100;
+                        const name = STATE_RATES[code] ? STATE_RATES[code].name : code;
+
+                        totalRatio += ratio;
+                        const sTax = stateTaxBase * ratio * rate;
+                        totalStateTax += sTax;
+
+                        const row = document.createElement('div');
+                        row.className = 'flex justify-between items-center py-1.5 border-b border-slate-700/50 last:border-0';
+                        row.innerHTML = `
+                            <span class="text-slate-300 font-sans text-sm">${name} <span class="text-xs text-slate-500 ml-1 bg-slate-800 px-1.5 py-0.5 rounded">占比 ${formatPercent(ratio)}</span></span> 
+                            <span class="text-purple-300 font-medium">${formatMoney(sTax)}</span>
+                        `;
+                        results.stateTaxesList.appendChild(row);
+                    });
+                    
+                    if (totalRatio > 1.001) {
+                        const warn = document.createElement('div');
+                        warn.className = 'text-rose-400 text-xs mt-3 border border-rose-500/30 bg-rose-500/10 p-2.5 rounded-lg font-sans flex items-start gap-2';
+                        warn.innerHTML = '<svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> 警告: 分摊比例总和超过 100%，请检查。';
+                        results.stateTaxesList.appendChild(warn);
+                    }
+                }
+
+                results.totalStateTax.textContent = formatMoney(totalStateTax);
+
+                // 8. Grand Total
+                const totalTax = fedTax + totalStateTax;
+                results.totalTax.textContent = formatMoney(totalTax);
+                
+                const effRate = line28 > 0 ? (totalTax / line28) : 0;
+                results.effectiveRate.textContent = formatPercent(effRate);
+            };
+
+            const saveData = () => {
+                const data = {
+                    gross: inputs.gross.value,
+                    cogs: inputs.cogs.value,
+                    deductions: {},
+                    states: []
+                };
+
+                deductionInputIds.forEach(id => data.deductions[id] = document.getElementById(id).value);
+                specialDeductionInputIds.forEach(id => data.deductions[id] = document.getElementById(id).value);
+
+                document.querySelectorAll('.state-entry').forEach(node => {
+                    data.states.push({
+                        code: node.querySelector('.state-code').value,
+                        rate: node.querySelector('.state-rate').value,
+                        ratio: node.querySelector('.state-ratio').value
+                    });
+                });
+
+                localStorage.setItem('cCorpTaxDataV3', JSON.stringify(data));
+            };
+
+            const loadData = () => {
+                try {
+                    const raw = localStorage.getItem('cCorpTaxDataV3');
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        
+                        if(data.gross !== undefined) inputs.gross.value = data.gross;
+                        if(data.cogs !== undefined) inputs.cogs.value = data.cogs;
+
+                        if (data.deductions) {
+                            [...deductionInputIds, ...specialDeductionInputIds].forEach(id => {
+                                if(data.deductions[id] !== undefined) {
+                                    document.getElementById(id).value = data.deductions[id];
+                                }
+                            });
+                        }
+
+                        statesContainer.innerHTML = '';
+                        if (data.states && data.states.length > 0) {
+                            data.states.forEach(s => addStateEntry(s));
+                        } else {
+                            addStateEntry({code: 'CA', rate: '8.84', ratio: '100'});
+                        }
+                    } else {
+                        addStateEntry({code: 'CA', rate: '8.84', ratio: '100'});
+                    }
+                } catch (e) {
+                    console.error("加载数据失败", e);
+                    addStateEntry({code: 'CA', rate: '8.84', ratio: '100'});
+                }
+            };
+
+            document.getElementById('calculateBtn').addEventListener('click', calculateTax);
+            
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                if(confirm("您确定要清空所有数据并恢复默认值吗？此操作不可逆。")) {
+                    localStorage.removeItem('cCorpTaxDataV3');
+                    location.reload();
+                }
+            });
+
+            // 批量绑定输入事件
+            const allInputs = [
+                inputs.gross, inputs.cogs,
+                ...deductionInputIds.map(id => document.getElementById(id)),
+                ...specialDeductionInputIds.map(id => document.getElementById(id))
+            ];
+
+            allInputs.forEach(input => {
+                if(input) {
+                    input.addEventListener('input', () => {
+                        calculateTax();
+                        saveData();
+                    });
+                }
+            });
+
+            // 初始化
+            loadData();
+            calculateTax();
+        });
+    </script>
+</body>
+</html>
