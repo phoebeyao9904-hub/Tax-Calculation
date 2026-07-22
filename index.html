@@ -133,7 +133,34 @@
             
             <div class="lg:col-span-8 space-y-8">
                 
-                <!-- 1. 收入与毛利 -->
+                <!-- 新手指南 (利用 details 标签实现免 JS 交互) -->
+                <details class="bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl group shadow-sm transition-all duration-300" open>
+                    <summary class="cursor-pointer p-5 font-semibold text-blue-800 dark:text-blue-300 list-none flex justify-between items-center select-none outline-none rounded-2xl focus:ring-2 focus:ring-blue-500/30">
+                        <div class="flex items-center gap-2">
+                            <div class="bg-blue-600 text-white rounded-full p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            首次使用？三步读懂估算逻辑
+                        </div>
+                        <svg class="w-5 h-5 text-blue-500 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </summary>
+                    <div class="p-5 pt-0 text-sm text-slate-700 dark:text-slate-300 space-y-4 leading-relaxed border-t border-blue-100 dark:border-blue-800/50 mt-1">
+                        <div class="flex items-start gap-3">
+                            <span class="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 font-bold text-xs">1</span>
+                            <p><strong>确立联邦税基：</strong> 在板块 1 和 2 中填入您的“总营业收入”、“销货成本”及各项“抵扣费用”。系统将模拟 IRS Form 1120，在右侧大屏自动推算出您的联邦应纳税所得额及联邦所得税 (21%)。</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 font-bold text-xs">2</span>
+                            <p><strong>自动判定州税 (Nexus)：</strong> 这款估算器的核心亮点。在板块 3 中“添加业务州”并填入您<strong>卖给该州的销售额</strong>。估算器会自动比对该州税法起征点（通常为10万或50万美金）。若超出门槛，系统将按比例切分利润并计算州税；若未超出，则自动亮绿灯免除该州州税。</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 font-bold text-xs">3</span>
+                            <p><strong>注意实体据点：</strong> 如果您在某州有海外仓、办公室或雇员，请务必在对应州卡片底部勾选“该州有实体据点”。这将无视上述的销售额门槛，直接触发您的州纳税义务。</p>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- 1. 营业收入与毛利 -->
                 <div class="section-card">
                     <h2 class="section-title">
                         <div class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
